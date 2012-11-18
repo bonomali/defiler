@@ -14,7 +14,7 @@ import common.Constants;
 import common.Constants.DiskOperationType;
 import dblockcache.DBuffer;
 
-public abstract class VirtualDisk implements IVirtualDisk {
+public class VirtualDisk implements IVirtualDisk {
 
 	private String _volName;
 	private RandomAccessFile _file;
@@ -63,8 +63,21 @@ public abstract class VirtualDisk implements IVirtualDisk {
 	 * -- buf is an DBuffer object that needs to be read/write from/to the volume.	
 	 * -- operation is either READ or WRITE  
 	 */
-	public abstract void startRequest(DBuffer buf, DiskOperationType operation) throws IllegalArgumentException,
-			IOException;
+	public void startRequest(DBuffer buf, DiskOperationType operation) throws IllegalArgumentException,
+			IOException {
+		// Note the operation calls getBuffer(), which will cause the buffer to be busy
+		switch (operation) {
+			case READ:
+				readBlock(buf);
+				break;
+			case WRITE:
+				writeBlock(buf);
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown disk operation type.");
+		}
+		buf.ioComplete();
+	}
 	
 	/*
 	 * Clear the contents of the disk by writing 0s to it
