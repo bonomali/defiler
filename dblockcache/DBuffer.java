@@ -1,27 +1,102 @@
 package dblockcache;
 
-public abstract class DBuffer {
+import java.io.IOException;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import virtualdisk.VirtualDisk;
+import virtualdisk.VirtualDiskSingleton;
+
+import common.Constants;
+
+public class DBuffer {
+	
+	private Lock _busyLock = new ReentrantLock();
+	private Lock _validLock = new ReentrantLock();
+	private Lock _dirtyLock = new ReentrantLock();
+	private Condition _isValidCV = _validLock.newCondition();
+	private Condition _isDirtyCV = _dirtyLock.newCondition();
+	
+	private int _blockID;
+	private byte[] _buffer;
+	private boolean _busy;
+	private boolean _dirty;
+	private boolean _valid;
+	
+	public DBuffer(int blockID) {
+		_blockID = blockID;
+		_buffer = new byte[Constants.BLOCK_SIZE];
+		_busy = false;
+		_dirty = false;
+		_valid = true;
+	}
 	
 	/* Start an asynchronous fetch of associated block from the volume */
-	public abstract void startFetch();
+	public void startFetch() {
+		VirtualDisk vd = VirtualDiskSingleton.getInstance();
+		try {
+			vd.startRequest(this, Constants.DiskOperationType.READ);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		// TODO: do we need to set valid here?
+	}
 	
 	/* Start an asynchronous write of buffer contents to block on volume */
-	public abstract void startPush();
+	public void startPush() {
+		// TODO: verify what async should mean...
+		VirtualDisk vd = VirtualDiskSingleton.getInstance();
+		try {
+			vd.startRequest(this, Constants.DiskOperationType.WRITE);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		_dirtyLock.lock();
+		_dirty = false;
+		_isDirtyCV.notifyAll();
+		_dirtyLock.unlock();
+	}
 	
 	/* Check whether the buffer has valid data */ 
-	public abstract boolean checkValid();
+	public boolean checkValid() {
+		// TODO: verify what "valid" is
+		return _valid;
+	}
 	
 	/* Wait until the buffer is free */
-	public abstract boolean waitValid();
+	public boolean waitValid() throws InterruptedException {
+		_validLock.lock();
+		while (!_valid) {
+			_isValidCV.await();
+		}
+		_validLock.unlock();
+		return _valid;
+	}
 	
 	/* Check whether the buffer is dirty, i.e., has modified data to be written back */
-	public abstract boolean checkClean();
+	public boolean checkClean() {
+		return !_dirty;
+	}
 	
 	/* Wait until the buffer is clean, i.e., until a push operation completes */
-	public abstract boolean waitClean();
+	public boolean waitClean() throws InterruptedException {
+		_dirtyLock.lock();
+		while (_dirty) {
+			_isDirtyCV.await();
+		}
+		_dirtyLock.unlock();
+		return !_dirty;
+	}
 	
 	/* Check if buffer is evictable: not evictable if I/O in progress, or buffer is held */
-	public abstract boolean isBusy();
+	public boolean isBusy() {
+		return _busy;
+	}
 
 	/*
 	 * reads into the buffer[] array from the contents of the DBuffer. Check
@@ -29,7 +104,13 @@ public abstract class DBuffer {
 	 * count are for the buffer array, not the DBuffer. Upon an error, it should
 	 * return -1, otherwise return number of bytes read.
 	 */
-	public abstract int read(byte[] buffer, int startOffset, int count);
+	public int read(byte[] buffer, int startOffset, int count) {
+		// Validity and bound checking
+		if (!_valid) return -1;
+		if (startOffset + count > buffer.length) return -1;
+		// Read into buffer
+		return buffcopy(_buffer, buffer, startOffset, count);
+	}
 
 	/*
 	 * writes into the DBuffer from the contents of buffer[] array. startOffset
@@ -37,14 +118,43 @@ public abstract class DBuffer {
 	 * Upon an error, it should return -1, otherwise return number of bytes
 	 * written.
 	 */
-	public abstract int write(byte[] buffer, int startOffset, int count);
+	public int write(byte[] buffer, int startOffset, int count) {
+		// Boundary check for if blocks are trying to be written past buff size
+		if (startOffset + count > Constants.BLOCK_SIZE) return -1;
+		// Otherwise write blocks (stop if we hit end of buffer or count)
+		int blocksWritten = buffcopy(buffer, _buffer, startOffset, count);
+		_dirty = true;
+		return blocksWritten;
+	}
+	
+	/*
+	 * Helper method for copying from one buffer to another.
+	 */
+	private int buffcopy(byte[] src, byte[] dest, int offset, int count) {
+		int i = 0;
+		for (i = 0; i <  count && i < dest.length + offset && i < src.length; i++) {
+			dest[i + offset] = src[i];
+		}
+		return i;
+	}
 	
 	/* An upcall from VirtualDisk layer to inform the completion of an IO operation */
-	public abstract void ioComplete();
+	public synchronized void ioComplete() {
+		_busyLock.lock();
+		_busy = false;
+		_busyLock.unlock();
+	}
 	
 	/* An upcall from VirtualDisk layer to fetch the blockID associated with a startRequest operation */
-	public abstract int getBlockID();
+	public int getBlockID() {
+		return _blockID;
+	}
 	
 	/* An upcall from VirtualDisk layer to fetch the buffer associated with DBuffer object*/
-	public abstract byte[] getBuffer(); 
+	public byte[] getBuffer() {
+		_busyLock.lock();
+		_busy = true;
+		_busyLock.unlock();
+		return _buffer;
+	}
 }
