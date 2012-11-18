@@ -15,4 +15,7 @@ public class Constants {
 
 	/* Virtual disk file/store name */
 	public static final String vdiskName = "DSTORE.dat";
+	
+	/* DFS Constraints */
+	public static final int MAX_NUM_FILES = 1024;
 }
