@@ -1,0 +1,60 @@
+################
+# Team Info
+################
+
+Name1: Full Name #Edit 
+NetId1: fn	 #Edit
+
+Name2:
+NetId2:
+
+Name3:
+NetId3:
+
+###############
+# Time spent
+###############
+
+NetId1: 10 hours # Edit this accordingly
+NetId2: 10 hours # Edit this accordingly
+NetId3: 10 hours # Edit this accordingly
+
+################
+# Files to submit
+################
+
+*.java  #Including the test case files; Please do not submit tar or zip files
+README	#This file filled with the lab implementation details
+
+####################################
+# Implementation details
+####################################
+
+This section should contain the implementation details and a overview of the
+results. 
+
+You are required to provide a good README document along with the
+implementation details. In particular, you can pseudocode to describe your
+implementation details where necessary. However that does not mean to
+copy/paste your Java code. Rather, provide clear and concise text/pseudocode
+describing the primary algorithms (for e.g., scheduling choices you used) and
+any special data structures in your implementation. We expect the design and
+implementation details to be 3-4 pages. A plain textfile is encouraged.
+However, a pdf is acceptable. No other forms are permitted.
+
+In case of lab is limited in some functionality, you should provide
+the details to maximize your partial credit.
+
+
+####################################
+# Feedback on the lab
+####################################
+
+How did you find the lab?
+
+##################################
+# Additional comments
+##################################
+
+Anything else you would like us to evaluate your lab.
+List of collaborators involved including any online references/citations.
