@@ -99,7 +99,12 @@ public class DBuffer {
 		if (!_valid) return -1;
 		if (startOffset + count > buffer.length) return -1;
 		// Read into buffer
-		return buffcopy(_buffer, buffer, startOffset, count);
+		// Copy bytes from _buffer to buffer
+		int i = 0;
+		for (i = 0; i < count && i + startOffset < buffer.length && i < _buffer.length; i++) {
+			buffer[i + startOffset] = _buffer[i];
+		}
+		return i;
 	}
 
 	/*
@@ -112,18 +117,11 @@ public class DBuffer {
 		// Boundary check for if blocks are trying to be written past buff size
 		if (startOffset + count > Constants.BLOCK_SIZE) return -1;
 		// Otherwise write blocks (stop if we hit end of buffer or count)
-		int blocksWritten = buffcopy(buffer, _buffer, startOffset, count);
 		_dirty = true;
-		return blocksWritten;
-	}
-	
-	/*
-	 * Helper method for copying from one buffer to another.
-	 */
-	private int buffcopy(byte[] src, byte[] dest, int offset, int count) {
+		// Copy bytes from buffer to _buffer
 		int i = 0;
-		for (i = 0; i <  count && i < dest.length + offset && i < src.length; i++) {
-			dest[i + offset] = src[i];
+		for (i = 0; i < count && i + startOffset < buffer.length && i < _buffer.length; i++) {
+			_buffer[i] = buffer[i + startOffset];
 		}
 		return i;
 	}
