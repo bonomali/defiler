@@ -97,7 +97,6 @@ public class DBuffer {
 	public int read(byte[] buffer, int startOffset, int count) {
 		// Validity and bound checking
 		if (!_valid) return -1;
-		if (startOffset + count > buffer.length) return -1;
 		// Read into buffer
 		// Copy bytes from _buffer to buffer
 		int i = 0;
@@ -114,8 +113,6 @@ public class DBuffer {
 	 * written.
 	 */
 	public int write(byte[] buffer, int startOffset, int count) {
-		// Boundary check for if blocks are trying to be written past buff size
-		if (startOffset + count > Constants.BLOCK_SIZE) return -1;
 		// Otherwise write blocks (stop if we hit end of buffer or count)
 		_dirty = true;
 		// Copy bytes from buffer to _buffer
