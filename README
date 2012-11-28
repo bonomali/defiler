@@ -1,15 +1,17 @@
+##############################################
+# Please do not modify the format of this file
 ################
 # Team Info
 ################
 
-Name1: Full Name #Edit 
-NetId1: fn	 #Edit
+Name1: Kevin Gao
+NetId1: kag45
 
-Name2:
-NetId2:
+Name2: Natalia Carvalho 
+NetId2: nrc10
 
-Name3:
-NetId3:
+Name3: Ross Cahoon
+NetId3: rpc8
 
 ###############
 # Time spent
@@ -21,29 +23,39 @@ NetId3: 10 hours # Edit this accordingly
 
 ################
 # Files to submit
+# Design phase: 
 ################
 
-*.java  #Including the test case files; Please do not submit tar or zip files
-README	#This file filled with the lab implementation details
+README #A plain txt file or a pdf file; Fill-in the design/implementation section
+
+################
+# Files to submit
+# Final phase: 
+################
+
+README #Revised design/implementation details section; updated hours
+
+An executable *.jar file including the source code (*.java files) #Include the test case files when appropriate.
 
 ####################################
-# Implementation details
+# Design/Implementation details
 ####################################
 
-This section should contain the implementation details and a overview of the
-results. 
+DATA STRUCTURES:
 
-You are required to provide a good README document along with the
-implementation details. In particular, you can pseudocode to describe your
-implementation details where necessary. However that does not mean to
-copy/paste your Java code. Rather, provide clear and concise text/pseudocode
-describing the primary algorithms (for e.g., scheduling choices you used) and
-any special data structures in your implementation. We expect the design and
-implementation details to be 3-4 pages. A plain textfile is encouraged.
-However, a pdf is acceptable. No other forms are permitted.
+VDF Design Plan:
 
-In case of lab is limited in some functionality, you should provide
-the details to maximize your partial credit.
+Will be an arraylist of data. The first Block object will give information on that total size of the arraylist, and the number of files it currently holds. The next blocks will be the inode region and will be of size equal to the maximum number of files. In each inode will correspond to a specific fileID, it will hold information about the size of its respective file, what its offset is, if even exists and a checksum to see if it is corrupt. The checksum will be a 32 bit number and if we write to the part of the file we will calculate a the checksum for that block and add/substract from the checksum of the file to check for corrupt files. 
+
+Dbuffer Design Plan:
+Contains block ID and a Block object (that will be a block data)
+
+Cache Design:
+The cache will be designed to use an LRU eviction policy. The actual data structure used will be a LinkedHashMap; in order to incorporate the LRU policy, we will extend LinkedHashMap to be bounded and thread-safe. This means we can find things in the list constant time and evict them in constant time. In this LinkedHashmap, we will be holding Dbuffers that are in turn holding blocks. The pros of least recently used means that blocks that are used more will  more likely be in the cache however, the cons for this mean we are stating that temporal preference of blocks used and not their spatial relation to one another. We will only write back when a block is being evicted or a sync is called from the DFS. Prefetching will reduce the number of accesses and increase our overall efficiency.
+
+SYNCHRONIZATION:
+The DFS will handle all synchronization. The threads will run in the singleton DFS with writes being synchronous and reads occurring asynchronously. Every client will be a new thread and when writes occur, a block will be locked until the first thread is done (for both reads and writes).
+
 
 
 ####################################
