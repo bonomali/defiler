@@ -1,27 +1,49 @@
 package dfs;
 
+import common.Constants;
 import common.DFileID;
+import java.util.Set;
 
 public class INode {
 	DFileID _id;
-	int _blockOffset;
-	int _numBlocks;
+	Set<Integer> _blocks;
 	boolean _isFile;
 	
-	public INode(DFileID id, int blockOffset, int numBlocks, boolean create) {
+	public INode(DFileID id, boolean create) {
 		_id = id;
-		_blockOffset = blockOffset;
-		_numBlocks = numBlocks;
+		_blocks = new BoundedTreeSet<Integer>(Constants.MAX_NUM_BLOCKS_PER_FILE);
 		_isFile = create;
+		
 	}
 	
 	public byte[] serialize() {
-		byte[] serialized = new byte[4*3 + 1];
+		byte[] serialized = new byte[inodeSize()];
+		// Write dfileid
 		System.arraycopy(toBytes(_id.getID()), 0, serialized, 4*0, 4);
-		System.arraycopy(toBytes(_blockOffset), 0, serialized, 4*1, 4);
-		System.arraycopy(toBytes(_numBlocks), 0, serialized, 4*2, 4);
-		serialized[4*3] = (_isFile) ? (byte) 1 : 0;
+		// Write blocks
+		Integer[] blockNumbers = (Integer[]) _blocks.toArray();
+		for (int i = 0; i < blockNumbers.length; i++) {
+			System.arraycopy(toBytes(blockNumbers[i]), 0, serialized, 4*(1 + i), 4);
+		}
+		// Write isfile bit
+		serialized[serialized.length - 1] = (_isFile) ? (byte) 1 : 0;
 		return serialized;
+	}
+	
+	public int inodeSize() {
+		return 4 * (1 + Constants.MAX_NUM_BLOCKS_PER_FILE) + 1;
+	}
+	
+	public int numBlocks() {
+		return _blocks.size();
+	}
+	
+	public boolean associateBlocks(int ... blockNumbers) {
+		boolean successful = true;
+		for (int i : blockNumbers) {
+			successful |= _blocks.add(i);
+		}
+		return successful;
 	}
 	
 	private byte[] toBytes(int i) {
