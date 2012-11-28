@@ -1,7 +1,12 @@
 package dblockcache;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
+
+import common.Constants.DiskOperationType;
+
+import virtualdisk.VirtualDiskSingleton;
 
 /**
  * Cache with LRU replacement policy.
@@ -19,7 +24,13 @@ public class BoundedLRUCache extends LinkedHashMap<Integer, DBuffer> {
 	
 	@Override
 	public synchronized DBuffer put(Integer key, DBuffer val) {
-		if (this.size() == _capacity) removeEldestNotBusy();
+		if (this.size() == _capacity) {
+			DBuffer db = removeEldestNotBusy();
+			// write back if dirty
+			if (!db.checkClean()) {
+				VirtualDiskSingleton.getInstance().startRequest(db, DiskOperationType.WRITE);
+			}
+		}
 		super.put(key, val);
 		return val;
 	}
@@ -35,13 +46,12 @@ public class BoundedLRUCache extends LinkedHashMap<Integer, DBuffer> {
 		}
 	}
 	
-	private synchronized void removeEldestNotBusy() {
+	private synchronized DBuffer removeEldestNotBusy() {
 		while (true) {
 			for (Entry<Integer, DBuffer> e : this.entrySet()) {
 				DBuffer db = e.getValue();
 				if (!db.isBusy()) {
-					this.remove(e.getKey());
-					return;
+					return this.remove(e.getKey());
 				}
 			}
 		}

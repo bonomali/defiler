@@ -1,6 +1,5 @@
 package dblockcache;
 
-import java.io.IOException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -35,13 +34,7 @@ public class DBuffer {
 	/* Start an asynchronous fetch of associated block from the volume */
 	public void startFetch() {
 		VirtualDisk vd = VirtualDiskSingleton.getInstance();
-		try {
-			vd.startRequest(this, Constants.DiskOperationType.READ);
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		vd.startRequest(this, Constants.DiskOperationType.READ);
 		_validLock.lock();
 		_valid = true;
 		_isValidCV.notifyAll();
@@ -52,13 +45,7 @@ public class DBuffer {
 	public void startPush() {
 		// TODO: verify what async should mean...
 		VirtualDisk vd = VirtualDiskSingleton.getInstance();
-		try {
-			vd.startRequest(this, Constants.DiskOperationType.WRITE);
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		vd.startRequest(this, Constants.DiskOperationType.WRITE);
 		_dirtyLock.lock();
 		_dirty = false;
 		_isDirtyCV.notifyAll();

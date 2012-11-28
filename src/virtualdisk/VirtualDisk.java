@@ -63,18 +63,23 @@ public class VirtualDisk implements IVirtualDisk {
 	 * -- buf is an DBuffer object that needs to be read/write from/to the volume.	
 	 * -- operation is either READ or WRITE  
 	 */
-	public void startRequest(DBuffer buf, DiskOperationType operation) throws IllegalArgumentException,
-			IOException {
+	public void startRequest(DBuffer buf, DiskOperationType operation) {
 		// Note the operation calls getBuffer(), which will cause the buffer to be busy
-		switch (operation) {
-			case READ:
-				readBlock(buf);
-				break;
-			case WRITE:
-				writeBlock(buf);
-				break;
-			default:
-				throw new IllegalArgumentException("Unknown disk operation type.");
+		try {
+			switch (operation) {
+				case READ:
+					readBlock(buf);
+					break;
+				case WRITE:
+					writeBlock(buf);
+					break;
+				default:
+					System.err.println("Unknown disk operation type.");
+			}
+		} catch (IOException e) {
+			System.err.println(String.format("Unable to perform %s operation on block %d",
+					operation, buf.getBlockID()));
+			e.printStackTrace();
 		}
 		buf.ioComplete();
 	}
