@@ -8,8 +8,9 @@ import virtualdisk.VirtualDiskSingleton;
 
 import common.Constants;
 import common.DFileID;
+import dblockcache.DBufferCacheSingleton;
 
-public abstract class DFS {
+public class DFS {
 		
 	private boolean _format;
 	private String _volName;
@@ -17,18 +18,18 @@ public abstract class DFS {
 	private INode[] _inodes;
 	private int _lastCreatedDFID;
 
-	DFS(String volName, boolean format) {
+	protected DFS(String volName, boolean format) {
 		_volName = volName;
 		_format = format;
 		_inodes = new INode[Constants.MAX_NUM_FILES];
 		_lastCreatedDFID = 0;
 	}
 	
-	DFS(boolean format) {
+	protected DFS(boolean format) {
 		this(Constants.vdiskName,format);
 	}
 
-	DFS() {
+	protected DFS() {
 		this(Constants.vdiskName,false);
 	}
 
@@ -46,13 +47,18 @@ public abstract class DFS {
 	}
 	
 	/* creates a new DFile and returns the DFileID, which is useful to uniquely identify the DFile*/
-	public DFileID createDFile() {
+	public synchronized DFileID createDFile() {
 		int fileID = findFirstAvailableDFID();
+		_lastCreatedDFID = fileID;
 		// If fileID is -1, then max file limit reached
 		if (fileID < 0) {
 			return null;
 		}
-		return new DFileID(fileID);
+		// Create file
+		DFileID dfid = new DFileID(fileID);
+		if (_inodes[fileID] == null) _inodes[fileID] = new INode(dfid, true);
+		_inodes[fileID]._isFile = true;
+		return dfid;
 	}
 	
 	private int findFirstAvailableDFID() {
@@ -68,25 +74,28 @@ public abstract class DFS {
 	/* destroys the file specified by the DFileID */
 	public void destroyDFile(DFileID dFID) {
 		// Simply mark as no longer existing
-		// TODO: should it erase the data?
-		_inodes[dFID.getID()]._isFile = false;
+		if (_inodes[dFID.getID()] != null) _inodes[dFID.getID()]._isFile = false;
 	}
 
 	/*
 	 * reads the file dfile named by DFileID into the buffer starting from the
 	 * buffer offset startOffset; at most count bytes are transferred
 	 */
-	public abstract int read(DFileID dFID, byte[] buffer, int startOffset, int count);
+	public int read(DFileID dFID, byte[] buffer, int startOffset, int count) {
+		return 0;
+	}
 	
 	/*
 	 * writes to the file specified by DFileID from the buffer starting from the
 	 * buffer offset startOffsetl at most count bytes are transferred
 	 */
-	public abstract int write(DFileID dFID, byte[] buffer, int startOffset, int count);
+	public int write(DFileID dFID, byte[] buffer, int startOffset, int count) {
+		return 0;
+	}
 	
 	/* returns the size in bytes of the file indicated by DFileID. */
 	public int sizeDFile(DFileID dFID) {
-		return _inodes[dFID.getID()]._numBlocks * Constants.BLOCK_SIZE;
+		return _inodes[dFID.getID()].numBlocks() * Constants.BLOCK_SIZE;
 	}
 
 	/* 
@@ -98,5 +107,12 @@ public abstract class DFS {
 			if (in != null && in._isFile) existing.add(in._id);
 		}
 		return existing;
+	}
+	
+	/*
+	 * Write back all dirty blocks to the volume, and wait for completion.
+	 */
+	public synchronized void sync() {
+		DBufferCacheSingleton.getInstance().sync();
 	}
 }
