@@ -4,7 +4,7 @@ import java.util.Map.Entry;
 
 import common.Constants;
 
-public abstract class DBufferCache {
+public class DBufferCache {
 	
 	private int _cacheSize;
 	private BoundedLRUCache _cache;
