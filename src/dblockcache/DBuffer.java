@@ -42,7 +42,10 @@ public class DBuffer {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		// TODO: do we need to set valid here?
+		_validLock.lock();
+		_valid = true;
+		_isValidCV.notifyAll();
+		_validLock.unlock();
 	}
 	
 	/* Start an asynchronous write of buffer contents to block on volume */
