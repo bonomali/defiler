@@ -2,16 +2,16 @@ package dfs;
 
 import common.Constants;
 import common.DFileID;
-import java.util.Set;
+import java.util.List;
 
 public class INode {
 	DFileID _id;
-	Set<Integer> _blocks;
+	List<Integer> _blocks;
 	boolean _isFile;
 	
 	public INode(DFileID id, boolean create) {
 		_id = id;
-		_blocks = new BoundedTreeSet<Integer>(Constants.MAX_NUM_BLOCKS_PER_FILE);
+		_blocks = new BoundedLinkedList<Integer>(Constants.MAX_NUM_BLOCKS_PER_FILE);
 		_isFile = create;
 		
 	}

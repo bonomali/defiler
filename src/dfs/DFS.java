@@ -8,13 +8,15 @@ import virtualdisk.VirtualDiskSingleton;
 
 import common.Constants;
 import common.DFileID;
+import dblockcache.DBufferCache;
 import dblockcache.DBufferCacheSingleton;
 
 public class DFS {
-		
+
 	private boolean _format;
 	private String _volName;
 	private VirtualDisk _vd;
+	private DBufferCache _dbc;
 	private INode[] _inodes;
 	private int _lastCreatedDFID;
 
@@ -23,14 +25,17 @@ public class DFS {
 		_format = format;
 		_inodes = new INode[Constants.MAX_NUM_FILES];
 		_lastCreatedDFID = 0;
+		_vd = VirtualDiskSingleton.getInstance(volName, format);
+		_dbc = DBufferCacheSingleton.getInstance();
+		populateINodesFromDisk();
 	}
-	
+
 	protected DFS(boolean format) {
-		this(Constants.vdiskName,format);
+		this(Constants.vdiskName, format);
 	}
 
 	protected DFS() {
-		this(Constants.vdiskName,false);
+		this(Constants.vdiskName, false);
 	}
 
 	/*
@@ -38,15 +43,14 @@ public class DFS {
 	 * i.e., initialize to empty. On success returns true, else return false.
 	 */
 	public boolean format() {
-		try {
-			_vd = VirtualDiskSingleton.getInstance(_volName, _format);
-		} catch (Exception e) {
-			return false;
-		}
+		// TODO: Do stuff
 		return true;
 	}
-	
-	/* creates a new DFile and returns the DFileID, which is useful to uniquely identify the DFile*/
+
+	/*
+	 * creates a new DFile and returns the DFileID, which is useful to uniquely
+	 * identify the DFile
+	 */
 	public synchronized DFileID createDFile() {
 		int fileID = findFirstAvailableDFID();
 		_lastCreatedDFID = fileID;
@@ -56,25 +60,29 @@ public class DFS {
 		}
 		// Create file
 		DFileID dfid = new DFileID(fileID);
-		if (_inodes[fileID] == null) _inodes[fileID] = new INode(dfid, true);
+		if (_inodes[fileID] == null)
+			_inodes[fileID] = new INode(dfid, true);
 		_inodes[fileID]._isFile = true;
 		return dfid;
 	}
-	
+
 	private int findFirstAvailableDFID() {
 		// Linear search starting at the last created
 		for (int i = 0; i < Constants.MAX_NUM_FILES; i++) {
 			int idx = (i + _lastCreatedDFID) % _inodes.length;
 			INode curr = _inodes[idx];
-			if (curr == null || !curr._isFile) return idx;
+			if (curr == null || !curr._isFile)
+				return idx;
 		}
 		return -1;
 	}
-	
+
 	/* destroys the file specified by the DFileID */
 	public void destroyDFile(DFileID dFID) {
 		// Simply mark as no longer existing
-		if (_inodes[dFID.getID()] != null) _inodes[dFID.getID()]._isFile = false;
+		if (_inodes[dFID.getID()] != null)
+			_inodes[dFID.getID()]._isFile = false;
+		// TODO: Put blocks in free list
 	}
 
 	/*
@@ -82,9 +90,18 @@ public class DFS {
 	 * buffer offset startOffset; at most count bytes are transferred
 	 */
 	public int read(DFileID dFID, byte[] buffer, int startOffset, int count) {
-		return 0;
+		INode in = _inodes[dFID.getID()];
+		int bytesRead = 0;
+		for (int block : in._blocks) {
+			int newBytes = _dbc.getBlock(block).read(buffer,
+					startOffset + bytesRead, count - bytesRead);
+			if (newBytes == 0)
+				break;
+			bytesRead += newBytes;
+		}
+		return bytesRead;
 	}
-	
+
 	/*
 	 * writes to the file specified by DFileID from the buffer starting from the
 	 * buffer offset startOffsetl at most count bytes are transferred
@@ -92,27 +109,35 @@ public class DFS {
 	public int write(DFileID dFID, byte[] buffer, int startOffset, int count) {
 		return 0;
 	}
-	
+
 	/* returns the size in bytes of the file indicated by DFileID. */
 	public int sizeDFile(DFileID dFID) {
 		return _inodes[dFID.getID()].numBlocks() * Constants.BLOCK_SIZE;
 	}
 
-	/* 
+	/*
 	 * List all the existing DFileIDs in the volume
 	 */
 	public List<DFileID> listAllDFiles() {
 		List<DFileID> existing = new ArrayList<DFileID>();
 		for (INode in : _inodes) {
-			if (in != null && in._isFile) existing.add(in._id);
+			if (in != null && in._isFile)
+				existing.add(in._id);
 		}
 		return existing;
 	}
-	
+
 	/*
 	 * Write back all dirty blocks to the volume, and wait for completion.
 	 */
 	public synchronized void sync() {
 		DBufferCacheSingleton.getInstance().sync();
+	}
+
+	/*
+	 * Reads INodes from disk and brings them into memory
+	 */
+	private void populateINodesFromDisk() {
+		// TODO: implement
 	}
 }

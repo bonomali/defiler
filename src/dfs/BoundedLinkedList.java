@@ -1,13 +1,13 @@
 package dfs;
 
-import java.util.TreeSet;
+import java.util.LinkedList;
 
-public class BoundedTreeSet<T> extends TreeSet<T> {
+public class BoundedLinkedList<T> extends LinkedList<T> {
 
 	private static final long serialVersionUID = 6852357557980862865L;
 	private int _capacity;
 	
-	public BoundedTreeSet(int capacity) {
+	public BoundedLinkedList(int capacity) {
 		_capacity = capacity;
 	}
 	

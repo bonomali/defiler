@@ -3,4 +3,4 @@
 bin
 *.pdf
 *.ppt
-DSTORE.dat
+*.dat
