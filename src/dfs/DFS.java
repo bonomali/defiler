@@ -8,6 +8,7 @@ import virtualdisk.VirtualDiskSingleton;
 
 import common.Constants;
 import common.DFileID;
+import dblockcache.DBuffer;
 import dblockcache.DBufferCache;
 import dblockcache.DBufferCacheSingleton;
 
@@ -84,7 +85,9 @@ public class DFS {
 		// Simply mark as no longer existing
 		if (_inodes[dFID.getID()] != null) {
 			INode in = _inodes[dFID.getID()];
-			_freeBlocks.add(in._blocks.remove(in._blocks.size()-1));
+			while (in._blocks.size() > 0) {
+				_freeBlocks.add(in._blocks.remove(in._blocks.size()-1));
+			}
 			in._isFile = false;
 		}
 	}
@@ -97,8 +100,10 @@ public class DFS {
 		INode in = _inodes[dFID.getID()];
 		int bytesRead = 0;
 		for (int block : in._blocks) {
-			int newBytes = _dbc.getBlock(block).read(buffer,
+			DBuffer db = _dbc.getBlock(block);
+			int newBytes = db.read(buffer,
 					startOffset + bytesRead, count - bytesRead);
+			_dbc.releaseBlock(db);
 			bytesRead += newBytes;
 		}
 		// TODO: if count > file size, stop reading at EOF
@@ -128,8 +133,10 @@ public class DFS {
 		}
 		int bytesWritten = 0;
 		for (int block : in._blocks) {
-			int newBytes = _dbc.getBlock(block).write(buffer,
+			DBuffer db = _dbc.getBlock(block);
+			int newBytes = db.write(buffer,
 					startOffset + bytesWritten, count - bytesWritten);
+			_dbc.releaseBlock(db);
 			bytesWritten += newBytes;
 		}
 		// TODO: write EOF
