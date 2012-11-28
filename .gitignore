@@ -1,0 +1,6 @@
+.project
+*.jar
+bin
+*.pdf
+*.ppt
+DSTORE.dat

@@ -1,12 +1,7 @@
 package dblockcache;
 
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
-
-import common.Constants.DiskOperationType;
-
-import virtualdisk.VirtualDiskSingleton;
 
 /**
  * Cache with LRU replacement policy.
@@ -28,7 +23,7 @@ public class BoundedLRUCache extends LinkedHashMap<Integer, DBuffer> {
 			DBuffer db = removeEldestNotBusy();
 			// write back if dirty
 			if (!db.checkClean()) {
-				VirtualDiskSingleton.getInstance().startRequest(db, DiskOperationType.WRITE);
+				db.startPush();
 			}
 		}
 		super.put(key, val);
