@@ -12,33 +12,25 @@ import common.Constants;
 public class DBuffer {
 	
 	private Lock _busyLock = new ReentrantLock();
-	private Lock _validLock = new ReentrantLock();
 	private Lock _dirtyLock = new ReentrantLock();
-	private Condition _isValidCV = _validLock.newCondition();
 	private Condition _isDirtyCV = _dirtyLock.newCondition();
 	
 	private int _blockID;
 	private byte[] _buffer;
 	private int _busy;
 	private boolean _dirty;
-	private boolean _valid;
 	
 	public DBuffer(int blockID) {
 		_blockID = blockID;
 		_buffer = new byte[Constants.BLOCK_SIZE];
 		_busy = 0;
 		_dirty = false;
-		_valid = true;
 	}
 	
 	/* Start an asynchronous fetch of associated block from the volume */
 	public void startFetch() {
 		VirtualDisk vd = VirtualDiskSingleton.getInstance();
 		vd.startRequest(this, Constants.DiskOperationType.READ);
-		_validLock.lock();
-		_valid = true;
-		_isValidCV.notifyAll();
-		_validLock.unlock();
 	}
 	
 	/* Start an asynchronous write of buffer contents to block on volume */
@@ -50,22 +42,6 @@ public class DBuffer {
 		_dirty = false;
 		_isDirtyCV.notifyAll();
 		_dirtyLock.unlock();
-	}
-	
-	/* Check whether the buffer has valid data */ 
-	public boolean checkValid() {
-		// TODO: verify what "valid" is
-		return _valid;
-	}
-	
-	/* Wait until the buffer is free */
-	public boolean waitValid() throws InterruptedException {
-		_validLock.lock();
-		while (!_valid) {
-			_isValidCV.await();
-		}
-		_validLock.unlock();
-		return _valid;
 	}
 	
 	/* Check whether the buffer is dirty, i.e., has modified data to be written back */
@@ -95,8 +71,6 @@ public class DBuffer {
 	 * return -1, otherwise return number of bytes read.
 	 */
 	public int read(byte[] buffer, int startOffset, int count) {
-		// Validity and bound checking
-		if (!_valid) return -1;
 		// Read into buffer
 		// Copy bytes from _buffer to buffer
 		int i = 0;

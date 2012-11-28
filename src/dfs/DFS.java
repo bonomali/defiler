@@ -19,12 +19,14 @@ public class DFS {
 	private DBufferCache _dbc;
 	private INode[] _inodes;
 	private int _lastCreatedDFID;
+	private List<Integer> _freeBlocks;
 
 	protected DFS(String volName, boolean format) {
 		_volName = volName;
 		_format = format;
 		_inodes = new INode[Constants.MAX_NUM_FILES];
 		_lastCreatedDFID = 0;
+		_freeBlocks = new ArrayList<Integer>();
 		_vd = VirtualDiskSingleton.getInstance(volName, format);
 		_dbc = DBufferCacheSingleton.getInstance();
 		populateINodesFromDisk();
@@ -80,9 +82,11 @@ public class DFS {
 	/* destroys the file specified by the DFileID */
 	public void destroyDFile(DFileID dFID) {
 		// Simply mark as no longer existing
-		if (_inodes[dFID.getID()] != null)
-			_inodes[dFID.getID()]._isFile = false;
-		// TODO: Put blocks in free list
+		if (_inodes[dFID.getID()] != null) {
+			INode in = _inodes[dFID.getID()];
+			_freeBlocks.add(in._blocks.remove(in._blocks.size()-1));
+			in._isFile = false;
+		}
 	}
 
 	/*
@@ -95,10 +99,9 @@ public class DFS {
 		for (int block : in._blocks) {
 			int newBytes = _dbc.getBlock(block).read(buffer,
 					startOffset + bytesRead, count - bytesRead);
-			if (newBytes == 0)
-				break;
 			bytesRead += newBytes;
 		}
+		// TODO: if count > file size, stop reading at EOF
 		return bytesRead;
 	}
 
@@ -107,7 +110,30 @@ public class DFS {
 	 * buffer offset startOffsetl at most count bytes are transferred
 	 */
 	public int write(DFileID dFID, byte[] buffer, int startOffset, int count) {
-		return 0;
+		// TODO: if out of free blocks, throw error
+		if (count > Constants.MAX_NUM_BLOCKS_PER_FILE * Constants.BLOCK_SIZE) {
+			System.err.println("Too many bytes requested to be written.");
+		}
+		INode in = _inodes[dFID.getID()];
+		// Calculate number of blocks needed for write
+		int blocksNeeded = (int) Math.ceil(count / Constants.BLOCK_SIZE);
+		if (blocksNeeded > in._blocks.size()) {
+			while (blocksNeeded > in._blocks.size()) {
+				in._blocks.add(_freeBlocks.remove(0));
+			}
+		} else if (blocksNeeded < in._blocks.size()) {
+			while (blocksNeeded < in._blocks.size()) {
+				_freeBlocks.add(in._blocks.remove(in._blocks.size()-1));
+			}
+		}
+		int bytesWritten = 0;
+		for (int block : in._blocks) {
+			int newBytes = _dbc.getBlock(block).write(buffer,
+					startOffset + bytesWritten, count - bytesWritten);
+			bytesWritten += newBytes;
+		}
+		// TODO: write EOF
+		return bytesWritten;
 	}
 
 	/* returns the size in bytes of the file indicated by DFileID. */
@@ -138,6 +164,10 @@ public class DFS {
 	 * Reads INodes from disk and brings them into memory
 	 */
 	private void populateINodesFromDisk() {
+		// TODO: for now, just add all blocks to free list, but later on, we remove the ones that are used in the inodes already
+		for (int i = 0; i < Constants.NUM_OF_BLOCKS; i++) {
+			_freeBlocks.add(i);
+		}
 		// TODO: implement
 	}
 }

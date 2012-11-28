@@ -38,14 +38,6 @@ public class INode {
 		return _blocks.size();
 	}
 	
-	public boolean associateBlocks(int ... blockNumbers) {
-		boolean successful = true;
-		for (int i : blockNumbers) {
-			successful |= _blocks.add(i);
-		}
-		return successful;
-	}
-	
 	private byte[] toBytes(int i) {
 		byte[] byteRep= new byte[4];
 		byteRep[0] = (byte) (i >> 24);
