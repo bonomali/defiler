@@ -33,12 +33,13 @@ public abstract class DBufferCache {
 		} else {
 			db = _cache.get(blockID);
 		}
+		db.getBuffer(); // make busy
 		return db;
 	}
 
 	/* Release the buffer so that others waiting on it can use it */
 	public void releaseBlock(DBuffer buf) {
-		
+		buf.ioComplete();
 	}
 	
 	/*

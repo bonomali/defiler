@@ -19,14 +19,14 @@ public class DBuffer {
 	
 	private int _blockID;
 	private byte[] _buffer;
-	private boolean _busy;
+	private int _busy;
 	private boolean _dirty;
 	private boolean _valid;
 	
 	public DBuffer(int blockID) {
 		_blockID = blockID;
 		_buffer = new byte[Constants.BLOCK_SIZE];
-		_busy = false;
+		_busy = 0;
 		_dirty = false;
 		_valid = true;
 	}
@@ -85,7 +85,7 @@ public class DBuffer {
 	
 	/* Check if buffer is evictable: not evictable if I/O in progress, or buffer is held */
 	public boolean isBusy() {
-		return _busy;
+		return _busy > 0;
 	}
 
 	/*
@@ -131,7 +131,7 @@ public class DBuffer {
 	/* An upcall from VirtualDisk layer to inform the completion of an IO operation */
 	public synchronized void ioComplete() {
 		_busyLock.lock();
-		_busy = false;
+		_busy--;
 		_busyLock.unlock();
 	}
 	
@@ -143,7 +143,7 @@ public class DBuffer {
 	/* An upcall from VirtualDisk layer to fetch the buffer associated with DBuffer object*/
 	public byte[] getBuffer() {
 		_busyLock.lock();
-		_busy = true;
+		_busy++;
 		_busyLock.unlock();
 		return _buffer;
 	}
