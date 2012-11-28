@@ -1,10 +1,14 @@
 package dblockcache;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import common.Constants;
 
 public abstract class DBufferCache {
 	
 	private int _cacheSize;
+	private BoundedLRUCache _cache;
 	
 	/*
 	 * Constructor: allocates a cacheSize number of cache blocks, each
@@ -12,6 +16,7 @@ public abstract class DBufferCache {
 	 */
 	public DBufferCache(int cacheSize) {
 		_cacheSize = cacheSize * Constants.BLOCK_SIZE;
+		_cache = new BoundedLRUCache(cacheSize);
 	}
 	
 	/*

@@ -16,9 +16,34 @@ public class BoundedLRUCache extends LinkedHashMap<Integer, DBuffer> {
 		super(capacity + 1, 1, true);
 		_capacity = capacity;
 	}
-
-    @Override
-    protected boolean removeEldestEntry(final Entry<Integer, DBuffer> eldest) {
-        return super.size() > _capacity;
-    }
+	
+	@Override
+	public synchronized DBuffer put(Integer key, DBuffer val) {
+		if (this.size() == _capacity) removeEldestNotBusy();
+		super.put(key, val);
+		return val;
+	}
+	
+	@Override
+	public synchronized DBuffer get(Object key) {
+		if (this.containsKey(key)) {
+			DBuffer db = this.remove(key);
+			this.put((Integer) key, db);
+			return db;
+		} else {
+			return null;
+		}
+	}
+	
+	private synchronized void removeEldestNotBusy() {
+		while (true) {
+			for (Entry<Integer, DBuffer> e : this.entrySet()) {
+				DBuffer db = e.getValue();
+				if (!db.isBusy()) {
+					this.remove(e.getKey());
+					return;
+				}
+			}
+		}
+	}
 }
