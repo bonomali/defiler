@@ -30,7 +30,11 @@ public class DFS {
 		_freeBlocks = new ArrayList<Integer>();
 		_vd = VirtualDiskSingleton.getInstance(volName, format);
 		_dbc = DBufferCacheSingleton.getInstance();
-		populateINodesFromDisk();
+		try {
+			populateINodesFromDisk();
+		} catch (DFSCorruptionException e) {
+			e.printStackTrace();
+		}
 	}
 
 	protected DFS(boolean format) {
@@ -65,7 +69,7 @@ public class DFS {
 		DFileID dfid = new DFileID(fileID);
 		if (_inodes[fileID] == null)
 			_inodes[fileID] = new INode(dfid, true);
-		_inodes[fileID]._isFile = true;
+		_inodes[fileID].isFile(true);
 		return dfid;
 	}
 
@@ -74,8 +78,7 @@ public class DFS {
 		for (int i = 0; i < Constants.MAX_NUM_FILES; i++) {
 			int idx = (i + _lastCreatedDFID) % _inodes.length;
 			INode curr = _inodes[idx];
-			if (curr == null || !curr._isFile)
-				return idx;
+			if (curr == null || !curr._isFile) return idx;
 		}
 		return -1;
 	}
@@ -85,7 +88,7 @@ public class DFS {
 		// Simply mark as no longer existing
 		if (_inodes[dFID.getID()] != null) {
 			INode in = _inodes[dFID.getID()];
-			while (in._blocks.size() > 0) {
+			while (in.numBlocks() > 0) {
 				_freeBlocks.add(in._blocks.remove(in._blocks.size()-1));
 			}
 			in._isFile = false;
@@ -98,8 +101,12 @@ public class DFS {
 	 */
 	public int read(DFileID dFID, byte[] buffer, int startOffset, int count) {
 		INode in = _inodes[dFID.getID()];
+		return readBlocks(in.blocks(), buffer, startOffset, count, true);
+	}
+	
+	private int readBlocks(List<Integer> blocks, byte[] buffer, int startOffset, int count, boolean isFile) {
 		int bytesRead = 0;
-		for (int block : in._blocks) {
+		for (int block : blocks) {
 			DBuffer db = _dbc.getBlock(block);
 			int newBytes = db.read(buffer,
 					startOffset + bytesRead, count - bytesRead);
@@ -120,19 +127,30 @@ public class DFS {
 			System.err.println("Too many bytes requested to be written.");
 		}
 		INode in = _inodes[dFID.getID()];
+		// Check if dirty; if it is then write out the inode
+		int blocksNeeded = (int) Math.ceil(count / Constants.BLOCK_SIZE);
+		boolean inodeIsDirty = blocksNeeded != in.numBlocks();
+		int blocksWritten = writeBlocks(in.blocks(), buffer, startOffset, count, true);
+		if (inodeIsDirty) {
+			writeBlocks(INode.inodeBlocks(dFID), in.serialize(), 0, INode.inodeSize(), false);
+		}
+		return blocksWritten;
+	}
+	
+	private int writeBlocks(List<Integer> blocks, byte[] buffer, int startOffset, int count, boolean isFile) {
 		// Calculate number of blocks needed for write
 		int blocksNeeded = (int) Math.ceil(count / Constants.BLOCK_SIZE);
-		if (blocksNeeded > in._blocks.size()) {
-			while (blocksNeeded > in._blocks.size()) {
-				in._blocks.add(_freeBlocks.remove(0));
+		if (blocksNeeded > blocks.size()) {
+			while (blocksNeeded > blocks.size()) {
+				blocks.add(_freeBlocks.remove(0));
 			}
-		} else if (blocksNeeded < in._blocks.size()) {
-			while (blocksNeeded < in._blocks.size()) {
-				_freeBlocks.add(in._blocks.remove(in._blocks.size()-1));
+		} else if (blocksNeeded < blocks.size()) {
+			while (blocksNeeded < blocks.size()) {
+				_freeBlocks.add(blocks.remove(blocks.size()-1));
 			}
 		}
 		int bytesWritten = 0;
-		for (int block : in._blocks) {
+		for (int block : blocks) {
 			DBuffer db = _dbc.getBlock(block);
 			int newBytes = db.write(buffer,
 					startOffset + bytesWritten, count - bytesWritten);
@@ -155,7 +173,7 @@ public class DFS {
 		List<DFileID> existing = new ArrayList<DFileID>();
 		for (INode in : _inodes) {
 			if (in != null && in._isFile)
-				existing.add(in._id);
+				existing.add(in.id());
 		}
 		return existing;
 	}
@@ -170,11 +188,41 @@ public class DFS {
 	/*
 	 * Reads INodes from disk and brings them into memory
 	 */
-	private void populateINodesFromDisk() {
+	private void populateINodesFromDisk() throws DFSCorruptionException {
 		// TODO: for now, just add all blocks to free list, but later on, we remove the ones that are used in the inodes already
-		for (int i = 0; i < Constants.NUM_OF_BLOCKS; i++) {
+		for (int i = Constants.FILE_REGION_OFFSET; i < Constants.NUM_OF_BLOCKS; i++) {
 			_freeBlocks.add(i);
 		}
-		// TODO: implement
+		// Populate inodes
+		byte[] buffer = new byte[INode.inodeSize()];
+		for (int i = 0; i < Constants.MAX_NUM_FILES; i++) {
+			readBlocks(INode.inodeBlocks(i), buffer, 0, INode.inodeSize(), false);
+			_inodes[i] = new INode(buffer);
+			int inId = _inodes[i].id().getID();
+			if (inId != i && inId != 0) {
+				throw new DFSCorruptionException(String.format(
+					"INode ID read from disk does not match location (memid: %d, diskid: %d)",
+					i,
+					_inodes[i].id().getID()
+				));
+			}
+			if (inId != 0 && i > 0) _inodes[i].id(i);
+			// Remove all the blocks allocated to this inode
+			if (_inodes[i].isFile()) {
+				for (int block : _inodes[i].blocks()) {
+					if (_freeBlocks.remove(block) == null) {
+						throw new DFSCorruptionException("Same block allocated to multiple inodes");
+					}
+				}
+			}
+		}
+	}
+	
+	private class DFSCorruptionException extends Exception {
+		private static final long serialVersionUID = -7533228807562873783L;
+
+		public DFSCorruptionException(String message) {
+			super(message);
+		}
 	}
 }

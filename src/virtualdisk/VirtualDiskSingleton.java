@@ -11,17 +11,21 @@ public class VirtualDiskSingleton {
 	private VirtualDiskSingleton() {}
 	
 	public static VirtualDisk getInstance() {
-		if (_instance == null) instantiate(Constants.vdiskName, false);
+		getInstance(Constants.vdiskName, false);
 		return _instance;
 	}
 	
 	public static VirtualDisk getInstance(boolean format) {
-		if (_instance == null) instantiate(Constants.vdiskName, format);
+		getInstance(Constants.vdiskName, format);
 		return _instance;
 	}
 	
 	public static VirtualDisk getInstance(String diskName, boolean format) {
-		if (_instance == null) instantiate(diskName, format);
+		if (_instance == null) {
+			instantiate(diskName, format);
+		} else if (format) {
+			_instance.formatStore();
+		}
 		return _instance;
 	}
 	
