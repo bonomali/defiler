@@ -65,7 +65,7 @@ public class INode {
 		// Write dfileid
 		System.arraycopy(toBytes(_id.getID()), 0, serialized, 4*0, 4);
 		// Write isfile bit
-		serialized[5] = (_isFile) ? (byte) 1 : 0;
+		serialized[4] = (_isFile) ? (byte) 1 : 0;
 		// Write blocks
 		int i = 0;
 		for (Integer block : _blocks) {
