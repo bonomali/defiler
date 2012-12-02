@@ -140,13 +140,15 @@ public class DFS {
 	private int writeBlocks(List<Integer> blocks, byte[] buffer, int startOffset, int count, boolean isFile) {
 		// Calculate number of blocks needed for write
 		int blocksNeeded = (int) Math.ceil(count / Constants.BLOCK_SIZE);
-		if (blocksNeeded > blocks.size()) {
-			while (blocksNeeded > blocks.size()) {
-				blocks.add(_freeBlocks.remove(0));
-			}
-		} else if (blocksNeeded < blocks.size()) {
-			while (blocksNeeded < blocks.size()) {
-				_freeBlocks.add(blocks.remove(blocks.size()-1));
+		if (isFile) {
+			if (blocksNeeded > blocks.size()) {
+				while (blocksNeeded > blocks.size()) {
+					blocks.add(_freeBlocks.remove(0));
+				}
+			} else if (blocksNeeded < blocks.size()) {
+				while (blocksNeeded < blocks.size()) {
+					_freeBlocks.add(blocks.remove(blocks.size()-1));
+				}
 			}
 		}
 		int bytesWritten = 0;
