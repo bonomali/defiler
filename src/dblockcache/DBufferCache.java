@@ -51,6 +51,11 @@ public class DBufferCache {
 			DBuffer db = e.getValue();
 			if (!db.checkClean()) {
 				db.startPush();
+				try {
+					db.waitClean();
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
 			}
 		}
 	}
