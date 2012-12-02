@@ -40,7 +40,7 @@ public class DBuffer {
 		vd.startRequest(this, Constants.DiskOperationType.WRITE);
 		_dirtyLock.lock();
 		_dirty = false;
-		_isDirtyCV.notifyAll();
+		_isDirtyCV.signal();
 		_dirtyLock.unlock();
 	}
 	

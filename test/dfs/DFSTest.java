@@ -41,6 +41,8 @@ public class DFSTest extends TestCase {
 		bytesToRead = new byte[Constants.BLOCK_SIZE * 3];
 		dfs.read(file, bytesToWrite, 0, Constants.BLOCK_SIZE * 2);
 		assertEquals(0x0, bytesToRead[Constants.BLOCK_SIZE * 2]);
+		
+		dfs.sync();
 	}
 
 }
