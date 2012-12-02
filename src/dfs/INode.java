@@ -21,7 +21,7 @@ public class INode {
 		this(toDFID(data), data[4] == 0x1);
 		for (int i = 5; i < data.length; i++) {
 			int blockid = data[i];
-			if (i > 0) {
+			if (blockid > 0) {
 				_blocks.add(blockid);
 			}
 		}
