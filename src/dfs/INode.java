@@ -61,10 +61,10 @@ public class INode {
 	}
 	
 	public static List<Integer> inodeBlocks(int i) {
-		int iNodeStartBlock = Constants.INODE_REGION_OFFSET + i * INode.inodeSize();
+		int iNodeStartBlock = Constants.INODE_REGION_OFFSET + i * Constants.INODE_SIZE_IN_BLOCKS;
 		List<Integer> blockList = new ArrayList<Integer>();
 		for (int j = 0; j < Constants.INODE_SIZE_IN_BLOCKS; j++) {
-			blockList.add(iNodeStartBlock + Constants.INODE_SIZE_IN_BLOCKS*i + j);
+			blockList.add(iNodeStartBlock + j);
 		}
 		return blockList;
 	}

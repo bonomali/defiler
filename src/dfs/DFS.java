@@ -195,7 +195,6 @@ public class DFS {
 	 * Reads INodes from disk and brings them into memory
 	 */
 	private void populateINodesFromDisk() throws DFSCorruptionException {
-		// TODO: for now, just add all blocks to free list, but later on, we remove the ones that are used in the inodes already
 		for (int i = Constants.FILE_REGION_OFFSET; i < Constants.NUM_OF_BLOCKS; i++) {
 			_freeBlocks.add(i);
 		}
