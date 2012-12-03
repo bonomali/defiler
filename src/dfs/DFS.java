@@ -88,10 +88,12 @@ public class DFS {
 		// Simply mark as no longer existing
 		if (_inodes[dFID.getID()] != null) {
 			INode in = _inodes[dFID.getID()];
+			in.acquireWriteLock();
 			while (in.numBlocks() > 0) {
 				_freeBlocks.add(in.blocks().remove(in.blocks().size()-1));
 			}
 			in.isFile(false);
+			in.releaseWriteLock();
 		}
 	}
 
