@@ -26,11 +26,13 @@ public class INode {
 		this(new DFileID(toInt(data)), data[4] == 0x1);
 		_size = toInt(data, 5);
 		byte[] blockidBuff = new byte[4];
-		for (int i = 9; i < data.length; i+=4) {
-			System.arraycopy(data, i, blockidBuff, 0, 4);
-			int blockid = toInt(blockidBuff);
-			if (blockid > 0) {
-				_blocks.add(blockid);
+		if (_isFile) {
+			for (int i = 9; i < data.length; i+=4) {
+				System.arraycopy(data, i, blockidBuff, 0, 4);
+				int blockid = toInt(blockidBuff);
+				if (blockid > 0) {
+					_blocks.add(blockid);
+				}
 			}
 		}
 	}

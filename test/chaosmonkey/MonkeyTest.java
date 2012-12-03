@@ -11,8 +11,13 @@ import junit.framework.TestCase;
 
 public class MonkeyTest extends TestCase {
 	
+	private DFS dfs;
+	
+	public void setUp() {
+		dfs = DFSSingleton.getInstance("MONKEYTEST.dat", true);
+	}
+	
 	public void testReleaseTheMonkeys() {
-		DFS dfs = DFSSingleton.getInstance("MONKEYTEST.dat", true);
 		int numMonkeys = 16;
 		int numOpsPerMonkey = 256;
 		
@@ -37,7 +42,9 @@ public class MonkeyTest extends TestCase {
 				assertNull(cm.getException());
 			}
 		}
-		
+	}
+	
+	public void tearDown() {
 		dfs.sync();
 	}
 
