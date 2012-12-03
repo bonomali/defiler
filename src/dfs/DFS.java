@@ -78,7 +78,7 @@ public class DFS {
 		for (int i = 0; i < Constants.MAX_NUM_FILES; i++) {
 			int idx = (i + _lastCreatedDFID) % _inodes.length;
 			INode curr = _inodes[idx];
-			if (curr == null || !curr._isFile) return idx;
+			if (curr == null || !curr.isFile()) return idx;
 		}
 		return -1;
 	}
@@ -89,9 +89,9 @@ public class DFS {
 		if (_inodes[dFID.getID()] != null) {
 			INode in = _inodes[dFID.getID()];
 			while (in.numBlocks() > 0) {
-				_freeBlocks.add(in._blocks.remove(in._blocks.size()-1));
+				_freeBlocks.add(in.blocks().remove(in.blocks().size()-1));
 			}
-			in._isFile = false;
+			in.isFile(false);
 		}
 	}
 
@@ -101,8 +101,11 @@ public class DFS {
 	 */
 	public int read(DFileID dFID, byte[] buffer, int startOffset, int count) {
 		INode in = _inodes[dFID.getID()];
+		in.acquireReadLock();
 		if (count > in.size()) count = in.size();
-		return readBlocks(in.blocks(), buffer, startOffset, count, true);
+		int bytesRead = readBlocks(in.blocks(), buffer, startOffset, count, true);
+		in.releaseReadLock();
+		return bytesRead;
 	}
 	
 	private int readBlocks(List<Integer> blocks, byte[] buffer, int startOffset, int count, boolean isFile) {
@@ -127,6 +130,7 @@ public class DFS {
 			System.err.println("Too many bytes requested to be written.");
 		}
 		INode in = _inodes[dFID.getID()];
+		in.acquireWriteLock();
 		// Check if dirty; if it is then write out the inode
 		int blocksNeeded = (int) Math.ceil((float) count / Constants.BLOCK_SIZE);
 		if (blocksNeeded - in.numBlocks() > _freeBlocks.size()) {
@@ -140,6 +144,7 @@ public class DFS {
 		if (inodeIsDirty) {
 			writeBlocks(INode.inodeBlocks(dFID), in.serialize(), 0, INode.inodeSize(), false);
 		}
+		in.releaseWriteLock();
 		return bytesWritten;
 	}
 	
@@ -181,7 +186,7 @@ public class DFS {
 	public List<DFileID> listAllDFiles() {
 		List<DFileID> existing = new ArrayList<DFileID>();
 		for (INode in : _inodes) {
-			if (in != null && in._isFile)
+			if (in != null && in.isFile())
 				existing.add(in.id());
 		}
 		return existing;

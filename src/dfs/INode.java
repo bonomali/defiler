@@ -5,18 +5,21 @@ import common.DFileID;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class INode {
-	DFileID _id;
-	boolean _isFile;
-	int _size;	// bytes: note that int makes the max size 2GB
-	List<Integer> _blocks;
+	private DFileID _id;
+	private boolean _isFile;
+	private int _size;	// bytes: note that int makes the max size 2GB
+	private List<Integer> _blocks;
+	private ReentrantReadWriteLock _rwl;
 	
 	public INode(DFileID id, boolean create) {
 		_id = id;
 		_isFile = create;
 		_size = 0;
 		_blocks = new BoundedLinkedList<Integer>(Constants.MAX_NUM_BLOCKS_PER_FILE);
+		_rwl = new ReentrantReadWriteLock();
 	}
 	
 	public INode(byte[] data) {
@@ -58,6 +61,22 @@ public class INode {
 	
 	public List<Integer> blocks() {
 		return _blocks;
+	}
+	
+	public void acquireReadLock() {
+		_rwl.readLock().lock();
+	}
+	
+	public void releaseReadLock() {
+		_rwl.readLock().unlock();
+	}
+	
+	public void acquireWriteLock() {
+		_rwl.writeLock().lock();
+	}
+	
+	public void releaseWriteLock() {
+		_rwl.writeLock().unlock();
 	}
 	
 	public static List<Integer> inodeBlocks(int i) {
