@@ -50,7 +50,7 @@ public class DFS {
 	 * i.e., initialize to empty. On success returns true, else return false.
 	 */
 	public boolean format() {
-		// TODO: Do stuff
+		_vd.formatStore();
 		return true;
 	}
 
