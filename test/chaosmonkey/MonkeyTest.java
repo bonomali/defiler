@@ -28,7 +28,7 @@ public class MonkeyTest extends TestCase {
 		pool.shutdown();
 		
 		try {
-			pool.awaitTermination(90, TimeUnit.SECONDS);
+			pool.awaitTermination(180, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		} finally {
