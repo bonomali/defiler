@@ -38,16 +38,16 @@ public class ChaosBrain {
 	}
 	
 	public synchronized boolean addFile(DFileID file) throws ChaosException {
-		if (_availableFiles.contains(file)) {
+		/*if (_availableFiles.contains(file)) {
 			throw new ChaosException("Trying to add already existing file " + file.getID());
-		}
+		}*/
 		return _availableFiles.add(file);
 	}
 	
 	public synchronized boolean removeFile(DFileID file) throws ChaosException {
-		if (!_availableFiles.contains(file)) {
+		/*if (!_availableFiles.contains(file)) {
 			throw new ChaosException("Trying to remove already nonexisting file " + file.getID());
-		}
+		}*/
 		return _availableFiles.remove(file);
 	}
 

@@ -14,7 +14,7 @@ public class MonkeyTest extends TestCase {
 	public void testReleaseTheMonkeys() {
 		DFS dfs = DFSSingleton.getInstance("MONKEYTEST.dat", true);
 		int numMonkeys = 16;
-		int numOpsPerMonkey = 512;
+		int numOpsPerMonkey = 256;
 		
 		ChaosMonkey[] monkeys = new ChaosMonkey[numMonkeys];
 		for (int i = 0; i < numMonkeys; i++) {
@@ -33,6 +33,7 @@ public class MonkeyTest extends TestCase {
 			e.printStackTrace();
 		} finally {
 			for (ChaosMonkey cm : monkeys) {
+				if (cm.getException() != null) cm.getException().printStackTrace();
 				assertNull(cm.getException());
 			}
 		}
