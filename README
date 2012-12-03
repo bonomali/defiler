@@ -17,9 +17,9 @@ NetId3: rpc8
 # Time spent
 ###############
 
-NetId1: 10 hours # Edit this accordingly
-NetId2: 10 hours # Edit this accordingly
-NetId3: 10 hours # Edit this accordingly
+NetId1: 13 hours 
+NetId2: 11 hours 
+NetId3: 11 hours 
 
 ################
 # Files to submit
@@ -44,17 +44,20 @@ An executable *.jar file including the source code (*.java files) #Include the t
 DATA STRUCTURES:
 
 VDF Design Plan:
+There are three regions the first region the one block of reserved space, which we have unused.
 
-Will be an arraylist of data. The first Block object will give information on that total size of the arraylist, and the number of files it currently holds. The next blocks will be the inode region and will be of size equal to the maximum number of files. In each inode will correspond to a specific fileID, it will hold information about the size of its respective file, what its offset is, if even exists and a checksum to see if it is corrupt. The checksum will be a 32 bit number and if we write to the part of the file we will calculate a the checksum for that block and add/substract from the checksum of the file to check for corrupt files. 
+There is an inode region that is of size equal to the maximum number of files. In each inode will correspond to a specific fileID, it will hold information about the size of its respective file, the blocks that the file contains, if even exists and we check to see if a certain block exists in more than one inode to see if it is corrupt. IOWorker is thread that checks for IO operations on a queue for the VDF. There can be multiple workers fulfilling these requests to be more efficient (see the Constants.java to choose number of workers). IO queue is filled by the DFS, which is a concurrent linked blocking queue, in the start request method. When the startRequest method is called, the block that the particular operation is on the marked as invalid and there is a lock put on it until the transaction goes through and valid is set to true in VDF after the IOWorker has called doOperation. The allows operations to be called from above asynchronously. 
+
+The third region is the file region, where the data is actually held. 
 
 Dbuffer Design Plan:
-Contains block ID and a Block object (that will be a block data)
+Contains block ID and a Block object (that will be a block data of the file). There are locks for busy, when stuff is being written, and dirty when they only exist in the cache and have not been written back. 
 
 Cache Design:
-The cache will be designed to use an LRU eviction policy. The actual data structure used will be a LinkedHashMap; in order to incorporate the LRU policy, we will extend LinkedHashMap to be bounded and thread-safe. This means we can find things in the list constant time and evict them in constant time. In this LinkedHashmap, we will be holding Dbuffers that are in turn holding blocks. The pros of least recently used means that blocks that are used more will  more likely be in the cache however, the cons for this mean we are stating that temporal preference of blocks used and not their spatial relation to one another. We will only write back when a block is being evicted or a sync is called from the DFS. Prefetching will reduce the number of accesses and increase our overall efficiency.
+The cache will be designed to use an LRU eviction policy. The actual data structure used will be a LinkedHashMap; in order to incorporate the LRU policy, we will extend LinkedHashMap to be bounded and thread-safe. We extended the LinkedHashMap so we can create a bound HashMap, and implement our hold policy for eviction. This means we can find things in the list constant time and evict them in constant time. In this LinkedHashmap, we will be holding Dbuffers that are in turn holding blocks. The pros of least recently used means that blocks that are used more will  more likely be in the cache however, the cons for this mean we are stating that temporal preference of blocks used and not their spatial relation to one another. We will only write back when a block is being evicted or a sync is called from the DFS. For sync we check all of the Dbuffers in the cache that are dirty and write them back to the VDF.
 
-SYNCHRONIZATION:
-The DFS will handle all synchronization. The threads will run in the singleton DFS with writes being synchronous and reads occurring asynchronously. Every client will be a new thread and when writes occur, a block will be locked until the first thread is done (for both reads and writes).
+DFS Design:
+The DFS will handle all synchronization. The threads will run in the singleton DFS with multiple readers for a certain file but only one writer. The DFS knows all information about the Inode region so when a dfileID is passed in it will look for the information in the Inode region that corresponds to the particular file. It accesses these blocks just like data blocks in the VDF and also writesback when the Inode data changes, on a per file basis. Instead of an EOF, the INode tells us the file size so when reading or writing we compare the count to the size to ensure there are enough freeblocks (for a write) and that we aren't reading blocks not in the file (for a read).
 
 
 
@@ -63,6 +66,7 @@ The DFS will handle all synchronization. The threads will run in the singleton D
 ####################################
 
 How did you find the lab?
+Very difficult
 
 ##################################
 # Additional comments
