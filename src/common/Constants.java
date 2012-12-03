@@ -31,5 +31,4 @@ public class Constants {
 			.ceil((float) INode.inodeSize() / Constants.BLOCK_SIZE);
 	public static final int FILE_REGION_OFFSET = INODE_REGION_OFFSET
 			+ MAX_NUM_FILES * INODE_SIZE_IN_BLOCKS;
-	public static final byte[] FILE_EOF = {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
 }
