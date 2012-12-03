@@ -35,7 +35,6 @@ public class DBuffer {
 	
 	/* Start an asynchronous write of buffer contents to block on volume */
 	public void startPush() {
-		// TODO: verify what async should mean...
 		VirtualDisk vd = VirtualDiskSingleton.getInstance();
 		vd.startRequest(this, Constants.DiskOperationType.WRITE);
 		_dirtyLock.lock();
