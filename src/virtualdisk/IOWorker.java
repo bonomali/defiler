@@ -15,7 +15,6 @@ public class IOWorker implements Runnable {
 		while (true) {
 			try {
 				IOOperation next = _q.take();
-				System.out.println(String.format("IOOp: %s", next));
 				if (next != null) {
 					next.execute();
 				}

@@ -48,8 +48,10 @@ public class VirtualDisk implements IVirtualDisk {
 		/* Other methods as required */
 		
 		// Instantiate IO Worker thread
-		Thread ioworkerThread = new Thread(new IOWorker());
-		ioworkerThread.start();
+		for (int i = 0; i < Constants.NUM_IO_WORKERS; i++) {
+			Thread ioworkerThread = new Thread(new IOWorker());
+			ioworkerThread.start();
+		}
 	}
 	
 	public VirtualDisk(boolean format) throws FileNotFoundException,
@@ -68,6 +70,7 @@ public class VirtualDisk implements IVirtualDisk {
 	 * -- operation is either READ or WRITE  
 	 */
 	public void startRequest(DBuffer buf, DiskOperationType operation) {
+		buf.startIO();
 		IOQueueSingleton.getInstance().add(new IOOperation(buf, operation));
 	}
 	
@@ -90,6 +93,7 @@ public class VirtualDisk implements IVirtualDisk {
 			e.printStackTrace();
 		}
 		buf.ioComplete();
+		buf.finishIO();
 	}
 	
 	/*

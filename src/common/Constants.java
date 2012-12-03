@@ -19,6 +19,7 @@ public class Constants {
 
 	/* Virtual disk file/store name */
 	public static final String vdiskName = "DSTORE.dat";
+	public static final int NUM_IO_WORKERS = 5;
 
 	/* DBufferCache Constraints */
 	public static final int CACHE_SIZE = 512;

@@ -109,6 +109,7 @@ public class DFS {
 		int bytesRead = 0;
 		for (int block : blocks) {
 			DBuffer db = _dbc.getBlock(block);
+			db.waitValid();
 			int newBytes = db.read(buffer,
 					startOffset + bytesRead, count - bytesRead);
 			_dbc.releaseBlock(db);
@@ -159,8 +160,10 @@ public class DFS {
 		int bytesWritten = 0;
 		for (int block : blocks) {
 			DBuffer db = _dbc.getBlock(block);
+			db.waitValid();
 			int newBytes = db.write(buffer,
 					startOffset + bytesWritten, count - bytesWritten);
+			db.waitValid();
 			_dbc.releaseBlock(db);
 			bytesWritten += newBytes;
 		}

@@ -14,7 +14,7 @@ public class VirtualDiskSingletonTest extends TestCase {
 		assertNotNull(vd);
 	}
 	
-	public void testReadWrite() throws IllegalArgumentException, IOException {
+	/*public void testReadWrite() throws IllegalArgumentException, IOException {
 		VirtualDisk vd = VirtualDiskSingleton.getInstance();
 		DBuffer db = new DBuffer(0);
 		DBuffer db2 = new DBuffer(1);
@@ -29,7 +29,7 @@ public class VirtualDiskSingletonTest extends TestCase {
 		assertEquals(0x0, db2.getBuffer()[buf.length - 1]);
 		vd.startRequest(db2, Constants.DiskOperationType.READ);
 		assertEquals(0x3, db2.getBuffer()[buf.length - 1]);
-	}
+	}*/
 	
 
 }

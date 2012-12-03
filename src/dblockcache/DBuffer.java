@@ -13,18 +13,22 @@ public class DBuffer {
 	
 	private Lock _busyLock = new ReentrantLock();
 	private Lock _dirtyLock = new ReentrantLock();
+	private Lock _validLock = new ReentrantLock();
 	private Condition _isDirtyCV = _dirtyLock.newCondition();
+	private Condition _isValidCV = _validLock.newCondition();
 	
 	private int _blockID;
 	private byte[] _buffer;
 	private int _busy;
 	private boolean _dirty;
+	private boolean _valid;
 	
 	public DBuffer(int blockID) {
 		_blockID = blockID;
 		_buffer = new byte[Constants.BLOCK_SIZE];
 		_busy = 0;
 		_dirty = false;
+		_valid = false;
 	}
 	
 	/* Start an asynchronous fetch of associated block from the volume */
@@ -41,6 +45,32 @@ public class DBuffer {
 		_dirty = false;
 		_isDirtyCV.signal();
 		_dirtyLock.unlock();
+	}
+	
+	public void startIO() {
+		_validLock.lock();
+		_valid = false;
+		_validLock.unlock();
+	}
+	
+	public void finishIO() {
+		_validLock.lock();
+		_valid = true;
+		_isValidCV.signal();
+		_validLock.unlock();
+	}
+	
+	public boolean waitValid() {
+		_validLock.lock();
+		while (!_valid) {
+			try {
+				_isValidCV.await();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		_validLock.unlock();
+		return _valid;
 	}
 	
 	/* Check whether the buffer is dirty, i.e., has modified data to be written back */
