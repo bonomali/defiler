@@ -122,24 +122,39 @@ public class DFS {
 	 * buffer offset startOffsetl at most count bytes are transferred
 	 */
 	public int write(DFileID dFID, byte[] buffer, int startOffset, int count) {
-		// TODO: if out of free blocks, throw error
-		if (count > Constants.MAX_NUM_BLOCKS_PER_FILE * Constants.BLOCK_SIZE) {
+		int bytesToWrite = count + Constants.FILE_EOF.length;
+		if (bytesToWrite > Constants.MAX_NUM_BLOCKS_PER_FILE * Constants.BLOCK_SIZE) {
 			System.err.println("Too many bytes requested to be written.");
 		}
 		INode in = _inodes[dFID.getID()];
 		// Check if dirty; if it is then write out the inode
-		int blocksNeeded = (int) Math.ceil(count / Constants.BLOCK_SIZE);
+		int blocksNeeded = (int) Math.ceil(bytesToWrite / Constants.BLOCK_SIZE);
+		if (blocksNeeded - in.numBlocks() > _freeBlocks.size()) {
+			System.err.println("Not enough free blocks to write file");
+		}
 		boolean inodeIsDirty = blocksNeeded != in.numBlocks();
-		int blocksWritten = writeBlocks(in.blocks(), buffer, startOffset, count, true);
+		byte[] fileBuffer = buffer;
+		// Extend buffer to contain EOF also if necessary
+		if (bytesToWrite > buffer.length) {
+			fileBuffer = new byte[buffer.length + Constants.FILE_EOF.length];
+			System.arraycopy(buffer, 0, fileBuffer, 0, buffer.length);
+		}
+		appendEOF(fileBuffer, count);
+		int blocksWritten = writeBlocks(in.blocks(), fileBuffer, startOffset, bytesToWrite, true);
 		if (inodeIsDirty) {
 			writeBlocks(INode.inodeBlocks(dFID), in.serialize(), 0, INode.inodeSize(), false);
 		}
-		return blocksWritten;
+		return blocksWritten - Constants.FILE_EOF.length;
+	}
+	
+	private void appendEOF(byte[] buff, int count) {
+		int startEOF = (count < buff.length) ? count : buff.length;
+		System.arraycopy(Constants.FILE_EOF, 0, buff, startEOF, Constants.FILE_EOF.length);
 	}
 	
 	private int writeBlocks(List<Integer> blocks, byte[] buffer, int startOffset, int count, boolean isFile) {
 		// Calculate number of blocks needed for write
-		int blocksNeeded = (int) Math.ceil(count / Constants.BLOCK_SIZE);
+		int blocksNeeded = (int) Math.ceil((float) count / Constants.BLOCK_SIZE);
 		if (isFile) {
 			if (blocksNeeded > blocks.size()) {
 				while (blocksNeeded > blocks.size()) {
@@ -159,7 +174,6 @@ public class DFS {
 			_dbc.releaseBlock(db);
 			bytesWritten += newBytes;
 		}
-		// TODO: write EOF
 		return bytesWritten;
 	}
 
@@ -191,7 +205,6 @@ public class DFS {
 	 * Reads INodes from disk and brings them into memory
 	 */
 	private void populateINodesFromDisk() throws DFSCorruptionException {
-		// TODO: for now, just add all blocks to free list, but later on, we remove the ones that are used in the inodes already
 		for (int i = Constants.FILE_REGION_OFFSET; i < Constants.NUM_OF_BLOCKS; i++) {
 			_freeBlocks.add(i);
 		}
