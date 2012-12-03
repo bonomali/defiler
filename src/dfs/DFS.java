@@ -212,7 +212,7 @@ public class DFS {
 			// Remove all the blocks allocated to this inode
 			if (_inodes[i].isFile()) {
 				for (int block : _inodes[i].blocks()) {
-					if (_freeBlocks.remove(block) == null) {
+					if (!_freeBlocks.remove(new Integer(block))) {
 						throw new DFSCorruptionException("Same block allocated to multiple inodes");
 					}
 				}

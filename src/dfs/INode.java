@@ -18,9 +18,11 @@ public class INode {
 	}
 	
 	public INode(byte[] data) {
-		this(toDFID(data), data[4] == 0x1);
-		for (int i = 5; i < data.length; i++) {
-			int blockid = data[i];
+		this(new DFileID(toInt(data)), data[4] == 0x1);
+		byte[] blockidBuff = new byte[4];
+		for (int i = 5; i < data.length; i+=4) {
+			System.arraycopy(data, i, blockidBuff, 0, 4);
+			int blockid = toInt(blockidBuff);
 			if (blockid > 0) {
 				_blocks.add(blockid);
 			}
@@ -91,11 +93,11 @@ public class INode {
 		return byteRep;
 	}
 	
-	public static DFileID toDFID(byte[] bs) {
+	public static int toInt(byte[] bs) {
 		int id = 0;
 		for (int i = 0; i < 4; i++) {
 			id += ((int)bs[i] << (8 * (3 - i)));
 		}
-		return new DFileID(id);
+		return id;
 	}
 }
