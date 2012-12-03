@@ -50,8 +50,9 @@ public class ChaosMonkey implements Runnable {
 					break;
 				}
 				_opsLeft--;
+				// Give the monkey a break!
 				try {
-					Thread.sleep(_rand.nextInt(1000));
+					Thread.sleep(_rand.nextInt(250));
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}

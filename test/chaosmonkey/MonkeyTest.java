@@ -4,6 +4,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import dfs.DFS;
 import dfs.DFSSingleton;
 
 import junit.framework.TestCase;
@@ -11,7 +12,7 @@ import junit.framework.TestCase;
 public class MonkeyTest extends TestCase {
 	
 	public void testReleaseTheMonkeys() {
-		DFSSingleton.getInstance("MONKEYTEST.dat", true);
+		DFS dfs = DFSSingleton.getInstance("MONKEYTEST.dat", true);
 		int numMonkeys = 16;
 		int numOpsPerMonkey = 512;
 		
@@ -35,6 +36,8 @@ public class MonkeyTest extends TestCase {
 				assertNull(cm.getException());
 			}
 		}
+		
+		dfs.sync();
 	}
 
 }
