@@ -9,18 +9,21 @@ import java.util.List;
 public class INode {
 	DFileID _id;
 	boolean _isFile;
+	int _size;	// bytes: note that int makes the max size 2GB
 	List<Integer> _blocks;
 	
 	public INode(DFileID id, boolean create) {
 		_id = id;
 		_isFile = create;
+		_size = 0;
 		_blocks = new BoundedLinkedList<Integer>(Constants.MAX_NUM_BLOCKS_PER_FILE);
 	}
 	
 	public INode(byte[] data) {
 		this(new DFileID(toInt(data)), data[4] == 0x1);
+		_size = toInt(data, 5);
 		byte[] blockidBuff = new byte[4];
-		for (int i = 5; i < data.length; i+=4) {
+		for (int i = 9; i < data.length; i+=4) {
 			System.arraycopy(data, i, blockidBuff, 0, 4);
 			int blockid = toInt(blockidBuff);
 			if (blockid > 0) {
@@ -43,6 +46,14 @@ public class INode {
 	
 	public void isFile(boolean setter) {
 		_isFile = setter;
+	}
+	
+	public int size() {
+		return _size;
+	}
+	
+	public void size(int newSize) {
+		_size = newSize;
 	}
 	
 	public List<Integer> blocks() {
@@ -68,16 +79,18 @@ public class INode {
 		System.arraycopy(toBytes(_id.getID()), 0, serialized, 4*0, 4);
 		// Write isfile bit
 		serialized[4] = (_isFile) ? (byte) 1 : 0;
+		// Write size
+		System.arraycopy(toBytes(_size), 0, serialized, 5, 4);
 		// Write blocks
 		int i = 0;
 		for (Integer block : _blocks) {
-			System.arraycopy(toBytes(block), 0, serialized, 5 + 4*i++, 4);
+			System.arraycopy(toBytes(block), 0, serialized, 9 + 4*i++, 4);
 		}
 		return serialized;
 	}
 	
 	public static int inodeSize() {
-		return 4 + 1 + (4 * Constants.MAX_NUM_BLOCKS_PER_FILE);
+		return 4 + 1 + 4 + (4 * Constants.MAX_NUM_BLOCKS_PER_FILE);
 	}
 	
 	public int numBlocks() {
@@ -94,9 +107,13 @@ public class INode {
 	}
 	
 	public static int toInt(byte[] bs) {
+		return toInt(bs, 0);
+	}
+	
+	public static int toInt(byte[] bs, int offset) {
 		int id = 0;
 		for (int i = 0; i < 4; i++) {
-			id += ((int)bs[i] << (8 * (3 - i)));
+			id += ((int)bs[i + offset] << (8 * (3 - i)));
 		}
 		return id;
 	}

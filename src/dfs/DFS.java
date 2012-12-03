@@ -101,6 +101,7 @@ public class DFS {
 	 */
 	public int read(DFileID dFID, byte[] buffer, int startOffset, int count) {
 		INode in = _inodes[dFID.getID()];
+		if (count > in.size()) count = in.size();
 		return readBlocks(in.blocks(), buffer, startOffset, count, true);
 	}
 	
@@ -113,7 +114,6 @@ public class DFS {
 			_dbc.releaseBlock(db);
 			bytesRead += newBytes;
 		}
-		// TODO: if count > file size, stop reading at EOF
 		return bytesRead;
 	}
 
@@ -122,24 +122,29 @@ public class DFS {
 	 * buffer offset startOffsetl at most count bytes are transferred
 	 */
 	public int write(DFileID dFID, byte[] buffer, int startOffset, int count) {
-		// TODO: if out of free blocks, throw error
 		if (count > Constants.MAX_NUM_BLOCKS_PER_FILE * Constants.BLOCK_SIZE) {
 			System.err.println("Too many bytes requested to be written.");
 		}
 		INode in = _inodes[dFID.getID()];
 		// Check if dirty; if it is then write out the inode
-		int blocksNeeded = (int) Math.ceil(count / Constants.BLOCK_SIZE);
-		boolean inodeIsDirty = blocksNeeded != in.numBlocks();
-		int blocksWritten = writeBlocks(in.blocks(), buffer, startOffset, count, true);
+		int blocksNeeded = (int) Math.ceil((float) count / Constants.BLOCK_SIZE);
+		if (blocksNeeded - in.numBlocks() > _freeBlocks.size()) {
+			System.err.println("Not enough free blocks to write file");
+		}
+		int bytesWritten = writeBlocks(in.blocks(), buffer, startOffset, count, true);
+		boolean inodeIsDirty = in.size() != bytesWritten;
+		// Save bytes written to inode
+		in.size(bytesWritten);
+		// Write inode if dirty
 		if (inodeIsDirty) {
 			writeBlocks(INode.inodeBlocks(dFID), in.serialize(), 0, INode.inodeSize(), false);
 		}
-		return blocksWritten;
+		return bytesWritten;
 	}
 	
 	private int writeBlocks(List<Integer> blocks, byte[] buffer, int startOffset, int count, boolean isFile) {
 		// Calculate number of blocks needed for write
-		int blocksNeeded = (int) Math.ceil(count / Constants.BLOCK_SIZE);
+		int blocksNeeded = (int) Math.ceil((float) count / Constants.BLOCK_SIZE);
 		if (isFile) {
 			if (blocksNeeded > blocks.size()) {
 				while (blocksNeeded > blocks.size()) {
@@ -159,7 +164,6 @@ public class DFS {
 			_dbc.releaseBlock(db);
 			bytesWritten += newBytes;
 		}
-		// TODO: write EOF
 		return bytesWritten;
 	}
 
