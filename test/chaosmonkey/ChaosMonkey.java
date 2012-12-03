@@ -9,7 +9,8 @@ import dfs.DFSSingleton;
 
 public class ChaosMonkey implements Runnable {
 
-	private int _opsLeft;
+	private int _opsPerformed;
+	private int _totalOps;
 	private ChaosBrain _brain;
 	private Random _rand;
 	private DFS _dfs;
@@ -17,7 +18,8 @@ public class ChaosMonkey implements Runnable {
 	private int _id;
 
 	public ChaosMonkey(int id, int opsToDo) {
-		_opsLeft = opsToDo;
+		_opsPerformed = 0;
+		_totalOps = opsToDo;
 		_brain = ChaosBrain.getInstance();
 		_rand = new Random();
 		_dfs = DFSSingleton.getInstance("MONKEYTEST.dat", false);
@@ -27,12 +29,12 @@ public class ChaosMonkey implements Runnable {
 	@Override
 	public void run() {
 		try {
-			while (_opsLeft > 0) {
+			while (_opsPerformed < _totalOps) {
 				MonkeyCommand cmd = _brain.getCommand();
 				if (cmd.getOp() == MonkeyOp.CREATE_FILE) {
-					System.out.println(String.format("Monkey %d: %s", _id, cmd.getOp()));
+					System.out.println(String.format("Monkey %d[%d]: %s", _id, _opsPerformed, cmd.getOp()));
 				} else {
-					System.out.println(String.format("Monkey %d: %s %d", _id,
+					System.out.println(String.format("Monkey %d[%d]: %s %d", _id, _opsPerformed,
 							cmd.getOp(), cmd.getFile().getID()));
 				}
 				switch (cmd.getOp()) {
@@ -49,7 +51,7 @@ public class ChaosMonkey implements Runnable {
 					writeFile(cmd.getFile());
 					break;
 				}
-				_opsLeft--;
+				_opsPerformed++;
 				// Give the monkey a break!
 				try {
 					Thread.sleep(_rand.nextInt(250));
@@ -60,6 +62,7 @@ public class ChaosMonkey implements Runnable {
 		} catch (ChaosException ce) {
 			_exception = ce;
 		}
+		System.out.println(String.format("Monkey %d reporting in for banana", _id));
 	}
 
 	public ChaosException getException() {

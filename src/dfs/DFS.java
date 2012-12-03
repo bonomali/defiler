@@ -1,6 +1,7 @@
 package dfs;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import virtualdisk.VirtualDisk;
@@ -27,7 +28,7 @@ public class DFS {
 		_format = format;
 		_inodes = new INode[Constants.MAX_NUM_FILES];
 		_lastCreatedDFID = 0;
-		_freeBlocks = new ArrayList<Integer>();
+		_freeBlocks = Collections.synchronizedList(new ArrayList<Integer>());
 		_vd = VirtualDiskSingleton.getInstance(volName, format);
 		_dbc = DBufferCacheSingleton.getInstance();
 		try {
