@@ -46,6 +46,10 @@ public class VirtualDisk implements IVirtualDisk {
 			formatStore();
 		}
 		/* Other methods as required */
+		
+		// Instantiate IO Worker thread
+		Thread ioworkerThread = new Thread(new IOWorker());
+		ioworkerThread.start();
 	}
 	
 	public VirtualDisk(boolean format) throws FileNotFoundException,
@@ -64,6 +68,10 @@ public class VirtualDisk implements IVirtualDisk {
 	 * -- operation is either READ or WRITE  
 	 */
 	public void startRequest(DBuffer buf, DiskOperationType operation) {
+		IOQueueSingleton.getInstance().add(new IOOperation(buf, operation));
+	}
+	
+	public void doRequest(DBuffer buf, DiskOperationType operation) {
 		// Note the operation calls getBuffer(), which will cause the buffer to be busy
 		try {
 			switch (operation) {
