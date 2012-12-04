@@ -18,8 +18,8 @@ public class MonkeyTest extends TestCase {
 	}
 	
 	public void testReleaseTheMonkeys() {
-		int numMonkeys = 16;
-		int numOpsPerMonkey = 256;
+		int numMonkeys = 8;
+		int numOpsPerMonkey = 128;
 		
 		ChaosMonkey[] monkeys = new ChaosMonkey[numMonkeys];
 		for (int i = 0; i < numMonkeys; i++) {
